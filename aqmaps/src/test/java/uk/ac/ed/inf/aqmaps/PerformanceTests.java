@@ -32,7 +32,7 @@ public class PerformanceTests {
 					
 					System.out.println(d + " : " + m + " : " + y);
 					
-					System.out.println("------");
+					//System.out.println("------");
 					
 					for (int startPos = 0; startPos < 5; startPos++) {
 						
@@ -68,10 +68,12 @@ public class PerformanceTests {
 						
 						if (moves == 150) {
 							timesFailed++;
+							System.out.println(pos);
+							System.out.println("------");
 						}
 						
-						System.out.println(pos);
-						System.out.println("------");
+						//System.out.println(pos);
+						//System.out.println("------");
 						
 						averageMoves += moves;
 						testsDone++;

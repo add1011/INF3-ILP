@@ -39,17 +39,19 @@ public class App
         List<Sensor> flightPlan = PathFinder.nearestNeighbor(startCoordinates, sensors);
         flightPlan = PathFinder.tsp(startCoordinates, flightPlan);
         
+        Boolean canStillMove = true;
+        
         System.out.println("The drone is executing the flight plan!");
         while (flightPlan.isEmpty() != true) {
         	// getToSensor will return false if the drone ran out of moves or tried to go out of bounds.
-        	Boolean canStillMove = drone.getToSensor(flightPlan.get(0));
+        	canStillMove = drone.getToSensor(flightPlan.get(0));
         	
         	if (canStillMove == false) {
         		// print appropriate message
         		if (drone.getMovesLeft() < 1) {
             		System.out.println("The drone did not complete the plan as it ran out of moves...");
         		} else {
-        			System.out.println("The drone tried to exit boundaries, terminating.");
+        			System.out.println("The drone tried to exit boundaries, sending it back to the starting coordinates.");
         		}
         		// fill out the remaining sensors as did not visit
         		while (flightPlan.isEmpty() != true) {
@@ -68,8 +70,18 @@ public class App
         	}
         }
         
-        drone.getToPoint(startCoordinates);
-        System.out.println("The drone is finished!");
+        // tell the drone to go back to the starting coordinates
+        canStillMove = drone.getToPoint(startCoordinates);
+        if (canStillMove == false) {
+    		// print appropriate message
+    		if (drone.getMovesLeft() < 1) {
+        		System.out.println("The drone visited each sensor but ran out of moves on it's way back home...");
+    		} else {
+    			System.out.println("The drone tried to exit boundaries when trying to get home, terminating.");
+    		}
+        } else {
+            System.out.println("The drone is finished!");
+        }
         
         drone.buildReadings();
         
@@ -107,9 +119,11 @@ public class App
         List<Sensor> flightPlan = PathFinder.nearestNeighbor(startCoordinates, sensors);
         flightPlan = PathFinder.tsp(startCoordinates, flightPlan);
         
+        Boolean canStillMove = true;
+        
         while (flightPlan.isEmpty() != true) {
         	// getToSensor will return false if the drone ran out of moves or tried to go out of bounds.
-        	Boolean canStillMove = drone.getToSensor(flightPlan.get(0));
+        	canStillMove = drone.getToSensor(flightPlan.get(0));
         	
         	if (canStillMove == false) {
         		// print appropriate message
@@ -126,10 +140,19 @@ public class App
         	}
         }
         
-        drone.getToPoint(startCoordinates);
-                
+        // tell the drone to go back to the starting coordinates
+        canStillMove = drone.getToPoint(startCoordinates);
+        if (canStillMove == false) {
+    		// print appropriate message
+    		if (drone.getMovesLeft() < 1) {
+        		System.out.println("The drone visited each sensor but ran out of moves on it's way back home...");
+    		} else {
+    			System.out.println("The drone tried to exit boundaries when trying to get home, terminating.");
+    		}
+        }
+        
         moves = 150 - drone.getMovesLeft();
-		System.out.println("Number of moves = " + (150 - drone.getMovesLeft()));
+		//System.out.println("Number of moves = " + (150 - drone.getMovesLeft()));
         return moves;
     }
 }

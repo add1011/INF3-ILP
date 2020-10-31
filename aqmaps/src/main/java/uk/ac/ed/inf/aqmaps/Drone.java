@@ -38,7 +38,7 @@ public class Drone {
 			// get the angle to towards the point
 			var angle = PathFinder.getAngle(this.coordinates, s.getCoordinates());
 			// move towards the point once using the calculated angle
-			var move = this.move(angle, -1);
+			var move = this.move(angle);
 			
 			// if move is null, then the drone is either out of moves or tried to go out of bounds
 			if (move == null) {
@@ -64,7 +64,7 @@ public class Drone {
 			// get the angle to towards the point
 			var angle = PathFinder.getAngle(this.coordinates, p);
 			// move towards the point once using the calculated angle
-			var move = this.move(angle, -1);
+			var move = this.move(angle);
 			
 			if (move == null) {
 				return false;
@@ -75,7 +75,7 @@ public class Drone {
 		return true;
 	}
 	
-	public Move move(double angle, int keepDir) {
+	public Move move(double angle) {
 		// do not execute if the drone does not have any moves left
 		if (this.movesLeft < 1) {
 			return null;
@@ -90,9 +90,70 @@ public class Drone {
 		var x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
 		var y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
 		
-		if (y >= -3.184319 || y <= -3.192473 || x >= 55.946233 || x <= 55.942617) {
-			return null;
+		Boolean intersectsBoundaries = false;
+		Boolean intersectsBuilding = false;
+		
+		// if (y >= -3.184319 || y <= -3.192473 || x >= 55.946233 || x <= 55.942617)
+		
+		
+		var whatWay = 0;
+		var validMove = true;
+		// if the drone is about to move out of bounds to get to the target, try the next best direction
+		// breaching right boundary
+		if (y >= -3.184319) {
+			intersectsBoundaries = false;
+			if (angle < 180) {
+				whatWay = 10;
+			} else {
+				whatWay = -10;
+			}
+		// breaching left boundary
+		} else if (y <= -3.192473) {
+			intersectsBoundaries = false;
+			if (angle < 180) {
+				whatWay = -10;
+			} else {
+				whatWay = 10;
+			}
+		// breaching top boundary
+		} else if (x >= 55.946233) {
+			intersectsBoundaries = false;
+			if (angle < 270 && 90 <= angle) {
+				whatWay = 10;
+			} else {
+				whatWay = -10;
+			}
+		// breaching bottom boundary
+		} else if (x <= 55.942617) {
+			intersectsBoundaries = false;
+			if (angle < 270 && 90 <= angle) {
+				whatWay = -10;
+			} else {
+				whatWay = 10;
+			}
 		}
+		
+		while (intersectsBoundaries != false) {
+			angle += whatWay;
+			
+			// round the angle to the nearest ten as that is the range in which the drone can move
+			direction = (int)(Math.round(angle/10.0) * 10);
+			
+			// ensure the direction of movement is within range use the modulo operator
+			direction = direction % 360;
+			
+			// use basic planar trigonometry to find the position of the new point
+			x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
+			y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
+			
+			if (y < -3.184319 && y > -3.192473 && x < 55.946233 && x > 55.942617) {
+				validMove = true;
+			}
+			
+			System.out.println("BOUNDARIES");
+		}
+		
+		
 		
 		List<Point> p = new ArrayList<>();
 		p.add(Point.fromLngLat(this.coordinates.getY(), this.coordinates.getX()));
@@ -103,15 +164,10 @@ public class Drone {
 		// if the planned move is illegal (flies the drone into a no-fly zone) then find the next best direction to go
 		var b = PathFinder.checkIllegalMove(path, this.noFlyZones);
 		if (b != null) {
-			// keep going around the decided direction to prevent getting stuck
-			if (keepDir == 0) {
-				angle += -10;
-				return move(angle, 0);
-			} else if (keepDir == 1) {
-				angle += 10;
-				return move(angle, 1);
-			}
-			
+			intersectsBuilding = true;
+		}
+		
+		if (intersectsBuilding != false) {
 			// find the angle from the drone to the centre of the building
 			var angleToBuilding = PathFinder.getAngle(this.coordinates, b.getCentre());
 			var relativeAngle = (angle + (360 - angleToBuilding)) % 360;
@@ -123,19 +179,41 @@ public class Drone {
 			System.out.println("angleToBuilding+180: " + ((angleToBuilding + 180) % 360));
 			System.out.println("-------------------------------------------");
 			**/
-			
 			// if the angle from the drone to the goal is less than the angle to the building then go clockwise around the building
 			// 
-			//if (angle > ((angleToBuilding + 180) % 360) && angle < angleToBuilding) {
-
 			if (relativeAngle > 180) {
-				angle += -10;
-				return move(angle, 0);
+				whatWay = -10;
 			} else {
-				direction += 10;
-				return move(angle, 1);
+				whatWay = 10;
+			}
+			
+			while (intersectsBuilding != false) {
+				angle += whatWay;
+				
+				// round the angle to the nearest ten as that is the range in which the drone can move
+				direction = (int)(Math.round(angle/10.0) * 10);
+					
+				// ensure the direction of movement is within range use the modulo operator
+				direction = direction % 360;
+					
+				// use basic planar trigonometry to find the position of the new point
+				x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
+				y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
+				
+				
+				p = new ArrayList<>();
+				p.add(Point.fromLngLat(this.coordinates.getY(), this.coordinates.getX()));
+				p.add(Point.fromLngLat(y, x));
+				path = LineString.fromLngLats(p);
+					
+				b = PathFinder.checkIllegalMove(path, this.noFlyZones);
+					
+				if (b == null) {
+					intersectsBuilding = false;
+				}
 			}
 		}
+
 		// update the location of the drone
 		this.coordinates.setLocation(x, y);
 		
