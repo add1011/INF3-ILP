@@ -32,6 +32,7 @@ public class IO {
 		var response = client.send(request, BodyHandlers.ofString());
 
 		var gson = new Gson();
+				
 		List<Sensor> sensors = gson.fromJson(response.body(), new TypeToken<List<Sensor>>(){}.getType());
 		
 		for (var sensor : sensors) {
@@ -85,7 +86,6 @@ public class IO {
 		}
 		var file = Paths.get("flightpath-"+day+"-"+month+"-"+year+".txt");
 		Files.write(file, lines);
-		System.out.println("Number of moves = " + (l-1));
 	}
 	
 	private static Point2D wordsToCoords(String port, String words) throws IOException, InterruptedException {

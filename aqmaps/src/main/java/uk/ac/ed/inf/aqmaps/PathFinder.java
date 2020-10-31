@@ -9,9 +9,7 @@ import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
 
 public class PathFinder {
-	
-	private static long[][] distanceMatrix;
-		
+			
 	public static void main(String[] args) throws IOException, InterruptedException {
 		//var b = IO.readBuildings("80");
 		
@@ -48,16 +46,17 @@ public class PathFinder {
         }
         **/
 		//System.out.println(p.coordinates());
-				
-		System.out.println(routeLength(p, s));
+		
+		
+		System.out.println(calcRouteLength(p, s));
 		
 		s = nearestNeighbor(p, s);
 		
-		System.out.println(routeLength(p, s));
+		System.out.println(calcRouteLength(p, s));
 		
 		s = tsp(p, s);
 		
-		System.out.println(routeLength(p, s));
+		System.out.println(calcRouteLength(p, s));
 	}
 	
 	public static List<Sensor> tsp(Point2D startCoordinates, List<Sensor> s) {
@@ -72,57 +71,52 @@ public class PathFinder {
 		**/
 		List<Sensor> newRoute;
 		double newRouteLength;
-		var bestRouteLength = routeLength(startCoordinates, s);
+		var bestRouteLength = calcRouteLength(startCoordinates, s);
+		var improvementMade = true;
 		
-		var swaps = 1;
-		var improve = 0;
-		var iterations = 0;
-		long comparisions = 0;
-		
-		while (swaps != 0) {
-			swaps = 0;
+		// repeat until no improvements are made
+		while (improvementMade == true) {
+			improvementMade = false;
 			
 			for(var i = 1; i < s.size()-2; i++) {
 				for (var k = i+1; k < s.size()-1; k++) {
-					comparisions++;
 					
-					if ((s.get(i).getCoordinates().distance(s.get(i - 1).getCoordinates()) + s.get(k + 1).getCoordinates().distance(s.get(k).getCoordinates())) >=
-							(s.get(i).getCoordinates().distance(s.get(k + 1).getCoordinates()) + s.get(i - 1).getCoordinates().distance(s.get(k).getCoordinates()))) {
-						newRoute = tspSwap(s, i, k);
-						newRouteLength = routeLength(startCoordinates, newRoute);
+					if ((s.get(i).getCoordinates().distance(s.get(k + 1).getCoordinates()) + s.get(i - 1).getCoordinates().distance(s.get(k).getCoordinates())) <= 
+						(s.get(i).getCoordinates().distance(s.get(i - 1).getCoordinates()) + s.get(k + 1).getCoordinates().distance(s.get(k).getCoordinates()))) {
+						newRoute = twoOptSwap(s, i, k);
+						newRouteLength = calcRouteLength(startCoordinates, newRoute);
 						
 						if (newRouteLength < bestRouteLength) {
 							s = newRoute;
 							bestRouteLength = newRouteLength;
-							swaps++;
-							improve++;
+							improvementMade = true;
 						}
 					}
 					
 				}
 			}
-			iterations++;
 		}
 		return s;
 	}
 	
-	private static List<Sensor> tspSwap(List<Sensor> route, int i, int k) {
+	private static List<Sensor> twoOptSwap(List<Sensor> route, int i, int k) {
 		List<Sensor> newRoute = new ArrayList<>();
 		
-		var size = route.size();
-		
-		for (var s = 0; s <= i - 1; s++) {
-			newRoute.add(route.get(s));
+		// take node 0 to node i-1 and add to the new route
+		for (var n = 0; n <= i - 1; n++) {
+			newRoute.add(route.get(n));
 		}
 		
-		int dec = 0;
-		for (int c = i; c <= k; c++) {
-            newRoute.add(route.get(k - dec));
-            dec++;
+		// take node i to route k and add to the new route in reverse order
+		int reverseIndex = 0;
+		for (int n = i; n <= k; n++) {
+            newRoute.add(route.get(k - reverseIndex));
+            reverseIndex++;
         }
 		
-		for (int c = k + 1; c < size; c++) {
-            newRoute.add(route.get(c));
+		// take the rest of the nodes and add them to the new route
+		for (int n = k + 1; n < route.size(); n++) {
+            newRoute.add(route.get(n));
         }
 		
 		return newRoute;
@@ -205,7 +199,7 @@ public class PathFinder {
 		return closestSensor;
 	}
 	
-	private static double routeLength(Point2D startCoordinates, List<Sensor> sensors) {
+	private static double calcRouteLength(Point2D startCoordinates, List<Sensor> sensors) {
 		double routeLength = 0;
 		
 		routeLength += startCoordinates.distance(sensors.get(0).getCoordinates());

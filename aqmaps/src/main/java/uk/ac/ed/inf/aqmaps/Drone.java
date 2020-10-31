@@ -116,11 +116,13 @@ public class Drone {
 			var angleToBuilding = PathFinder.getAngle(this.coordinates, b.getCentre());
 			var relativeAngle = (angle + (360 - angleToBuilding)) % 360;
 			
+			/**
 			System.out.println("angle:               " + angle);
 			System.out.println("relativeAngle:       " + relativeAngle);
 			System.out.println("angleToBuilding:     " + angleToBuilding);
 			System.out.println("angleToBuilding+180: " + ((angleToBuilding + 180) % 360));
 			System.out.println("-------------------------------------------");
+			**/
 			
 			// if the angle from the drone to the goal is less than the angle to the building then go clockwise around the building
 			// 
