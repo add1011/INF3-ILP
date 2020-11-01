@@ -9,57 +9,27 @@ import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
 
 public class PathFinder {
-			
-	public static void main(String[] args) throws IOException, InterruptedException {
-		//var b = IO.readBuildings("80");
-		
+	
+	/**
+	public static void main(String[] args) throws IOException, InterruptedException {		
 		var s = IO.readSensors("01", "01", "2020", "80");
 		var p = new Point2D.Double(55.9444, -3.1878);
-		/**
-		distanceMatrix = new long[s.size()][s.size()];
-		for (int i = 0; i < s.size(); i++) {
-			for (int j = 0; j < s.size(); j++) {
-				distanceMatrix[i][j] = (long) (s.get(i).getCoordinates().distance
-						(s.get(j).getCoordinates())  * 1000000000);
-			}
-		}
-		**/
 		
-		tsp(p, s);
-		/**
-		for (int i = 0; i < distanceMatrix.length/2; i++) {
-			System.out.println();
-            // Loop through all elements of current row 
-            for (int j = 0; j < distanceMatrix.length/2; j++) {
-            	if (i == j) {
-            		System.out.print("   0    | ");
-            	} else {
-            		System.out.print(distanceMatrix[i][j] + " | "); 
-
-            	}
-            }
-
-            System.out.println("...");
-		}
-		for (int j = 0; j < distanceMatrix.length/2; j++) {
-			System.out.print("  ...   | "); 
-        }
-        **/
-		//System.out.println(p.coordinates());
-		
-		
+		twoOpt(p, s);
+				
 		System.out.println(calcRouteLength(p, s));
 		
 		s = nearestNeighbor(p, s);
 		
 		System.out.println(calcRouteLength(p, s));
 		
-		s = tsp(p, s);
+		s = twoOpt(p, s);
 		
 		System.out.println(calcRouteLength(p, s));
 	}
+	**/
 	
-	public static List<Sensor> tsp(Point2D startCoordinates, List<Sensor> s) {
+	public static List<Sensor> twoOpt(Point2D startCoordinates, List<Sensor> s) {
 		/**
 		distanceMatrix = new long[requiredSensors.size()][requiredSensors.size()];
 		for (int i = 0; i < requiredSensors.size(); i++) {

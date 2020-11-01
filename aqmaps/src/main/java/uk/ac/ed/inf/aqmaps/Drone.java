@@ -19,6 +19,7 @@ public class Drone {
 	private List<Point> points;
 	private Point2D coordinates;
 	private int movesLeft;
+	private int lastMove;
 	
 	// CONSTRUCTOR //
 	public Drone(Point2D startCoordinates, List<Obstacle> noFlyZones) {
@@ -90,7 +91,7 @@ public class Drone {
 		var x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
 		var y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
 		
-		Boolean intersectsBoundaries = false;
+		Boolean intersectsBoundary = false;
 		Boolean intersectsBuilding = false;
 		
 		// if (y >= -3.184319 || y <= -3.192473 || x >= 55.946233 || x <= 55.942617)
@@ -101,7 +102,7 @@ public class Drone {
 		// if the drone is about to move out of bounds to get to the target, try the next best direction
 		// breaching right boundary
 		if (y >= -3.184319) {
-			intersectsBoundaries = false;
+			intersectsBoundary = false;
 			if (angle < 180) {
 				whatWay = 10;
 			} else {
@@ -109,7 +110,7 @@ public class Drone {
 			}
 		// breaching left boundary
 		} else if (y <= -3.192473) {
-			intersectsBoundaries = false;
+			intersectsBoundary = false;
 			if (angle < 180) {
 				whatWay = -10;
 			} else {
@@ -117,7 +118,7 @@ public class Drone {
 			}
 		// breaching top boundary
 		} else if (x >= 55.946233) {
-			intersectsBoundaries = false;
+			intersectsBoundary = false;
 			if (angle < 270 && 90 <= angle) {
 				whatWay = 10;
 			} else {
@@ -125,7 +126,7 @@ public class Drone {
 			}
 		// breaching bottom boundary
 		} else if (x <= 55.942617) {
-			intersectsBoundaries = false;
+			intersectsBoundary = false;
 			if (angle < 270 && 90 <= angle) {
 				whatWay = -10;
 			} else {
@@ -133,7 +134,7 @@ public class Drone {
 			}
 		}
 		
-		while (intersectsBoundaries != false) {
+		while (intersectsBoundary != false) {
 			angle += whatWay;
 			
 			// round the angle to the nearest ten as that is the range in which the drone can move
@@ -142,15 +143,18 @@ public class Drone {
 			// ensure the direction of movement is within range use the modulo operator
 			direction = direction % 360;
 			
+			// if the next best direction is back the way it came, try one more than that to not get caught in a loop
+			if (direction == ((this.lastMove + 180) % 360)) {
+				direction += 2 * whatWay;
+			}
+			
 			// use basic planar trigonometry to find the position of the new point
 			x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
 			y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
 			
 			if (y < -3.184319 && y > -3.192473 && x < 55.946233 && x > 55.942617) {
 				validMove = true;
-			}
-			
-			System.out.println("BOUNDARIES");
+			}			
 		}
 		
 		
@@ -187,6 +191,8 @@ public class Drone {
 				whatWay = 10;
 			}
 			
+			intersectsBoundary = false;
+			
 			while (intersectsBuilding != false) {
 				angle += whatWay;
 				
@@ -195,25 +201,37 @@ public class Drone {
 					
 				// ensure the direction of movement is within range use the modulo operator
 				direction = direction % 360;
+				
+				// if the next best direction is back the way it came, try one more than that to not get caught in a loop
+				if (direction == ((this.lastMove + 180) % 360)) {
+					direction += 2 * whatWay;
+				}
 					
 				// use basic planar trigonometry to find the position of the new point
 				x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
 				y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
 				
+				// if the new path intersects the boundary, go the other way around the building
+				if ((y >= -3.184319 || y <= -3.192473 || x >= 55.946233 || x <= 55.942617) && intersectsBoundary == false) {
+					intersectsBoundary = true;
+					whatWay *= -1;
+					continue;
+				}
 				
+				// create a path from the calculated direction to check if it intersects with a building
 				p = new ArrayList<>();
 				p.add(Point.fromLngLat(this.coordinates.getY(), this.coordinates.getX()));
 				p.add(Point.fromLngLat(y, x));
 				path = LineString.fromLngLats(p);
-					
+				
 				b = PathFinder.checkIllegalMove(path, this.noFlyZones);
 					
-				if (b == null) {
+				if (b == null && y < -3.184319 && y > -3.192473 && x < 55.946233 && x > 55.942617) {
 					intersectsBuilding = false;
 				}
 			}
 		}
-
+				
 		// update the location of the drone
 		this.coordinates.setLocation(x, y);
 		
@@ -221,6 +239,8 @@ public class Drone {
 		
 		// remove one move from the number of moves left
 		this.movesLeft -= 1;
+		
+		this.lastMove = direction;
 		
 		return new Move(this.coordinates.getY(),this.coordinates.getX(),direction,x,y);
 	}

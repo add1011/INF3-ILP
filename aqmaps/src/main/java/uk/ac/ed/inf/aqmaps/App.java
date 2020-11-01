@@ -37,7 +37,7 @@ public class App
 
         System.out.println("Calculating order to visit sensors...");
         List<Sensor> flightPlan = PathFinder.nearestNeighbor(startCoordinates, sensors);
-        flightPlan = PathFinder.tsp(startCoordinates, flightPlan);
+        flightPlan = PathFinder.twoOpt(startCoordinates, flightPlan);
         
         Boolean canStillMove = true;
         
@@ -70,17 +70,20 @@ public class App
         	}
         }
         
-        // tell the drone to go back to the starting coordinates
-        canStillMove = drone.getToPoint(startCoordinates);
-        if (canStillMove == false) {
-    		// print appropriate message
-    		if (drone.getMovesLeft() < 1) {
-        		System.out.println("The drone visited each sensor but ran out of moves on it's way back home...");
-    		} else {
-    			System.out.println("The drone tried to exit boundaries when trying to get home, terminating.");
-    		}
-        } else {
-            System.out.println("The drone is finished!");
+        if (canStillMove == true || drone.getMovesLeft() > 0) {
+        	// tell the drone to go back to the starting coordinates
+            canStillMove = drone.getToPoint(startCoordinates);
+            
+            if (canStillMove == false) {
+        		// print appropriate message
+        		if (drone.getMovesLeft() < 1) {
+            		System.out.println("The drone visited each sensor but ran out of moves on it's way back home...");
+        		} else {
+        			System.out.println("The drone tried to exit boundaries when trying to get home, terminating.");
+        		}
+            } else {
+                System.out.println("The drone is finished!");
+            }
         }
         
         drone.buildReadings();
@@ -117,7 +120,7 @@ public class App
         Drone drone = new Drone(startCoordinates, buildings);
 
         List<Sensor> flightPlan = PathFinder.nearestNeighbor(startCoordinates, sensors);
-        flightPlan = PathFinder.tsp(startCoordinates, flightPlan);
+        flightPlan = PathFinder.twoOpt(startCoordinates, flightPlan);
         
         Boolean canStillMove = true;
         
@@ -132,7 +135,6 @@ public class App
         		} else {
         			System.out.println("The drone tried to exit boundaries, terminating.");
         		}
-        		System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         		return 150;
         	} else {
         		// remove the just visited sensor from the flightPlan

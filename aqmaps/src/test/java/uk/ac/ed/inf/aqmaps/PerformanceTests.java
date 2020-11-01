@@ -8,37 +8,31 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class PerformanceTests {
-	private double averageMoves;
-	private int timesFailed;
-	private int testsDone;
-	
-	@Before
-	public void setUp() {
-		averageMoves = 0;
-		timesFailed = 0;
-		testsDone = 0;
-	}
-	
 	@Test
 	public void testPerformance() throws IOException, InterruptedException {
-		for (int year = 2020; year < 2021; year++) {
-			for (int month = 1; month < 3; month++) {
-				int daysInMonth = LocalDate.of(year, month, 1).lengthOfMonth();
-				for (int day = 1; day < daysInMonth + 1; day++) {
+		var averageMoves = 0.0;
+		var timesFailed = 0;
+		var worstPerformance = 0;
+		var testsDone = 0;
+		
+		long startTime = System.currentTimeMillis();
+
+		for (var year = 2020; year < 2022; year++) {
+			for (var month = 1; month < 13; month++) {
+				var daysInMonth = LocalDate.of(year, month, 1).lengthOfMonth();
+				for (var day = 1; day < daysInMonth + 1; day++) {
 					
-					String d = String.valueOf(day);
-					String m = String.valueOf(month);
-					String y = String.valueOf(year);
+					var d = String.valueOf(day);
+					var m = String.valueOf(month);
+					var y = String.valueOf(year);
 					
 					System.out.println(d + " : " + m + " : " + y);
-					
-					//System.out.println("------");
-					
-					for (int startPos = 0; startPos < 5; startPos++) {
+										
+					for (var startPos = 0; startPos < 5; startPos++) {
 						
-						String startLat = "";
-						String startLng = "";
-						String pos = "";
+						var startLat = "";
+						var startLng = "";
+						var pos = "";
 						
 						if (startPos == 0) {
 							startLat = "55.9444";
@@ -64,10 +58,11 @@ public class PerformanceTests {
 						
 						String[] args = new String[] {d, m, y, startLat, startLng, "", "80"};
 												
-						int moves = App.runTest(args);
+						var moves = App.runTest(args);
 						
 						if (moves == 150) {
 							timesFailed++;
+							System.out.println(d + " : " + m + " : " + y);
 							System.out.println(pos);
 							System.out.println("------");
 						}
@@ -75,18 +70,27 @@ public class PerformanceTests {
 						//System.out.println(pos);
 						//System.out.println("------");
 						
+						if (moves > worstPerformance) {
+							worstPerformance = moves;
+						}
+						
 						averageMoves += moves;
 						testsDone++;
 					}
-					System.out.println("-------------------------------");
+					System.out.println("------");
+					//System.out.println("-------------------------------");
 				}
 			}
 		}
 		
+		long stopTime = System.currentTimeMillis();
+		System.out.println("Runtime : " + (stopTime - startTime)/1000 + " seconds");
+		
 		averageMoves = averageMoves / testsDone;
 		
-		System.out.println(averageMoves);
+		System.out.println("Average moves : " + averageMoves);
 		System.out.println("Tests done : " + testsDone);
+		System.out.println("Worst performance : " + worstPerformance);
 		System.out.println("Times the drone Failed : " + timesFailed);
 	}
 }
