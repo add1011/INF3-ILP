@@ -1,7 +1,6 @@
 package uk.ac.ed.inf.aqmaps;
 
 import java.awt.geom.Point2D;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 

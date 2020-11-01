@@ -17,7 +17,6 @@ public class Drone {
 	private List<Point> points;
 	private Point2D coordinates;
 	private int movesLeft;
-	private int lastMove;
 	
 	// CONSTRUCTOR //
 	public Drone(Point2D startCoordinates) {
@@ -260,9 +259,7 @@ public class Drone {
 		
 		// remove one move from the number of moves left
 		this.movesLeft -= 1;
-		
-		this.lastMove = direction;
-		
+				
 		return new Move(this.coordinates.getY(),this.coordinates.getX(),direction,x,y);
 	}
 	
