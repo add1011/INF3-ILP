@@ -30,15 +30,6 @@ public class PathFinder {
 	**/
 	
 	public static List<Sensor> twoOpt(Point2D startCoordinates, List<Sensor> s) {
-		/**
-		distanceMatrix = new long[requiredSensors.size()][requiredSensors.size()];
-		for (int i = 0; i < requiredSensors.size(); i++) {
-			for (int j = 0; j < requiredSensors.size(); j++) {
-				distanceMatrix[i][j] = (long) (requiredSensors.get(i).getCoordinates().distance
-						(requiredSensors.get(j).getCoordinates())  * 1000000000);
-			}
-		}
-		**/
 		List<Sensor> newRoute;
 		double newRouteLength;
 		var bestRouteLength = calcRouteLength(startCoordinates, s);

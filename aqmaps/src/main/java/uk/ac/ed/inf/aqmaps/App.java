@@ -48,12 +48,8 @@ public class App
         	
         	if (canStillMove == false) {
         		// print appropriate message
-        		if (drone.getMovesLeft() < 1) {
-            		System.out.println("The drone did not complete the plan as it ran out of moves...");
-        		} else {
-        			System.out.println("The drone tried to exit boundaries, sending it back to the starting coordinates.");
-        		}
-        		// fill out the remaining sensors as did not visit
+            	System.out.println("The drone did not complete the plan as it ran out of moves...");
+        		// fill out the remaining sensors as they were not visited
         		while (flightPlan.isEmpty() != true) {
         			var sensor = Point.fromLngLat(flightPlan.get(0).getCoordinates().getY(), flightPlan.get(0).getCoordinates().getX());
         			var fSensor = Feature.fromGeometry((Geometry)sensor);
@@ -70,17 +66,11 @@ public class App
         	}
         }
         
-        if (canStillMove == true || drone.getMovesLeft() > 0) {
+        if (canStillMove == true) {
         	// tell the drone to go back to the starting coordinates
             canStillMove = drone.getToPoint(startCoordinates);
-            
             if (canStillMove == false) {
-        		// print appropriate message
-        		if (drone.getMovesLeft() < 1) {
-            		System.out.println("The drone visited each sensor but ran out of moves on it's way back home...");
-        		} else {
-        			System.out.println("The drone tried to exit boundaries when trying to get home, terminating.");
-        		}
+            	System.out.println("The drone visited each sensor but ran out of moves on it's way back home...");
             } else {
                 System.out.println("The drone is finished!");
             }
@@ -130,11 +120,7 @@ public class App
         	
         	if (canStillMove == false) {
         		// print appropriate message
-        		if (drone.getMovesLeft() < 1) {
-            		System.out.println("The drone did not complete the plan as it ran out of moves...");
-        		} else {
-        			System.out.println("The drone tried to exit boundaries, terminating.");
-        		}
+            	System.out.println("The drone did not complete the plan as it ran out of moves...");
         		return 150;
         	} else {
         		// remove the just visited sensor from the flightPlan
@@ -142,19 +128,16 @@ public class App
         	}
         }
         
-        // tell the drone to go back to the starting coordinates
-        canStillMove = drone.getToPoint(startCoordinates);
-        if (canStillMove == false) {
-    		// print appropriate message
-    		if (drone.getMovesLeft() < 1) {
-        		System.out.println("The drone visited each sensor but ran out of moves on it's way back home...");
-    		} else {
-    			System.out.println("The drone tried to exit boundaries when trying to get home, terminating.");
-    		}
+        if (canStillMove == true) {
+        	// tell the drone to go back to the starting coordinates
+            canStillMove = drone.getToPoint(startCoordinates);
+            if (canStillMove == false) {
+            	System.out.println("The drone visited each sensor but ran out of moves on it's way back home...");
+            }
         }
         
         moves = 150 - drone.getMovesLeft();
-		//System.out.println("Number of moves = " + (150 - drone.getMovesLeft()));
+		//System.out.println("Number of moves = " + moves);
         return moves;
     }
 }
