@@ -10,7 +10,6 @@ import com.mapbox.geojson.Point;
 
 public class App 
 {	
-	public static int moves;
 	// Execute the program
     public static void main(String[] args) throws IOException, InterruptedException {
         run(args);
@@ -33,8 +32,9 @@ public class App
         
         List<Sensor> sensors = IO.readSensors(day, month, year, port);
         List<Obstacle> buildings = IO.readBuildings(port);
-        Drone drone = new Drone(startCoordinates, buildings);
-
+        PathFinder.setNoFlyZones(buildings);
+        Drone drone = new Drone(startCoordinates);
+        
         System.out.println("Calculating order to visit sensors...");
         List<Sensor> flightPlan = PathFinder.nearestNeighbor(startCoordinates, sensors);
         flightPlan = PathFinder.twoOpt(startCoordinates, flightPlan);
@@ -75,14 +75,11 @@ public class App
                 System.out.println("The drone is finished!");
             }
         }
-        
-        drone.buildReadings();
-        
+                
         System.out.println("Creating files...");
-        IO.writeReadings(drone.getReadings(), day, month, year);
+        IO.writeReadings(drone.buildReadings(), day, month, year);
         IO.writeFlightPath(drone.getFlightPath(), day, month, year);
         
-        moves = 150 - drone.getMovesLeft();
 		System.out.println("Number of moves = " + (150 - drone.getMovesLeft()));
         System.out.println("Done!");
     }
@@ -107,7 +104,8 @@ public class App
                 
         List<Sensor> sensors = IO.readSensors(day, month, year, port);
         List<Obstacle> buildings = IO.readBuildings(port);
-        Drone drone = new Drone(startCoordinates, buildings);
+        PathFinder.setNoFlyZones(buildings);
+        Drone drone = new Drone(startCoordinates);
 
         List<Sensor> flightPlan = PathFinder.nearestNeighbor(startCoordinates, sensors);
         flightPlan = PathFinder.twoOpt(startCoordinates, flightPlan);
@@ -136,7 +134,7 @@ public class App
             }
         }
         
-        moves = 150 - drone.getMovesLeft();
+        var moves = 150 - drone.getMovesLeft();
 		//System.out.println("Number of moves = " + moves);
         return moves;
     }

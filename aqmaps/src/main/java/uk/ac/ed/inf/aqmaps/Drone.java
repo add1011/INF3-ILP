@@ -12,9 +12,7 @@ import com.mapbox.geojson.Point;
 
 public class Drone {
 	// ATTRIBUTES //
-	private List<Obstacle> noFlyZones;
 	private List<Move> flightPath;
-	private FeatureCollection readings;
 	private List<Feature> featureList;
 	private List<Point> points;
 	private Point2D coordinates;
@@ -22,9 +20,8 @@ public class Drone {
 	private int lastMove;
 	
 	// CONSTRUCTOR //
-	public Drone(Point2D startCoordinates, List<Obstacle> noFlyZones) {
+	public Drone(Point2D startCoordinates) {
 		this.movesLeft = 150;
-		this.noFlyZones = noFlyZones;
 		this.flightPath = new ArrayList<>();
 		this.featureList = new ArrayList<>();
 		this.points = new ArrayList<>();
@@ -91,7 +88,18 @@ public class Drone {
 		var x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
 		var y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
 		
+		/**
+		for (Point point : this.points) {
+			Point2D pointt = new Point2D.Double(point.latitude(), point.longitude());
+			if (pointt.equals(new Point2D.Double(x, y))) {
+				direction = Math.abs((direction + 30) % 360);
+			}
+		}
 		
+		// use basic planar trigonometry to find the position of the new point
+		x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
+		y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
+		**/
 		//////////////////////////////////////////////////////////////////////////////////////////////////
 		/** if the drone is about to move out of bounds to get to the target, set the next best direction/
 		/*  according to which end of the boundary the drone is at.									   **/
@@ -142,13 +150,26 @@ public class Drone {
 			direction = Math.abs(direction % 360);
 			
 			// if the next best direction is back the way it came, try three more than that to not get caught in a loop
-			if (direction == ((this.lastMove + 180) % 360)) {
-				direction = Math.abs((direction + 3 * whatWay) % 360);
-			}
+			//if (direction == ((this.lastMove + 180) % 360)) {
+			//	direction = Math.abs((direction + 3 * whatWay) % 360);
+			//}
 			
 			// use basic planar trigonometry to find the position of the new point
 			x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
 			y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
+			
+			if (this.points.size() > 3) {
+				for (Point point : this.points.subList(this.points.size()-4, this.points.size())) {
+					Point2D pointt = new Point2D.Double(point.latitude(), point.longitude());
+					if (pointt.equals(new Point2D.Double(x, y))) {
+						direction = Math.abs((direction + 3 * whatWay) % 360);
+						
+						// use basic planar trigonometry to find the position of the new point
+						x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
+						y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
+					}
+				}
+			}
 			
 			if (y < -3.184319 && y > -3.192473 && x < 55.946233 && x > 55.942617) {
 				intersectsBoundary = false;
@@ -164,7 +185,7 @@ public class Drone {
 		var path = LineString.fromLngLats(p);
 		
 		// if the planned move is illegal (flies the drone into a no-fly zone) then find the next best direction to go
-		var b = PathFinder.checkIllegalMove(path, this.noFlyZones);
+		var b = PathFinder.checkIllegalMove(path);
 		
 		if (b != null) {
 			// find the angle from the drone to the centre of the building
@@ -191,15 +212,24 @@ public class Drone {
 					
 				// ensure the direction of movement is within range use the modulo operator
 				direction = Math.abs(direction % 360);
-				
-				// if the next best direction is back the way it came, try three more than that to not get caught in a loop
-				if (direction == ((this.lastMove + 180) % 360)) {
-					direction = Math.abs((direction + 3 * whatWay) % 360);
-				}
 					
 				// use basic planar trigonometry to find the position of the new point
 				x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
 				y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
+				
+				
+				if (this.points.size() > 3) {
+					for (Point point : this.points.subList(this.points.size()-4, this.points.size())) {
+						Point2D pointt = new Point2D.Double(point.latitude(), point.longitude());
+						if (pointt.equals(new Point2D.Double(x, y))) {
+							direction = Math.abs((direction + 3 * whatWay) % 360);
+							
+							// use basic planar trigonometry to find the position of the new point
+							x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
+							y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
+						}
+					}
+				}
 				
 				// if the new path intersects the boundary, go the other way around the building
 				if ((y >= -3.184319 || y <= -3.192473 || x >= 55.946233 || x <= 55.942617) && keepDir == false) {
@@ -214,7 +244,7 @@ public class Drone {
 				p.add(Point.fromLngLat(y, x));
 				path = LineString.fromLngLats(p);
 				
-				b = PathFinder.checkIllegalMove(path, this.noFlyZones);
+				b = PathFinder.checkIllegalMove(path);
 				
 				// if the new location does not enter a no-fly-zone and does not exit the boundaries, break the loop
 				if (b == null && y < -3.184319 && y > -3.192473 && x < 55.946233 && x > 55.942617) {
@@ -236,7 +266,7 @@ public class Drone {
 		return new Move(this.coordinates.getY(),this.coordinates.getX(),direction,x,y);
 	}
 	
-	public void checkSensor(Sensor s) {
+	private void checkSensor(Sensor s) {
 		var sensor = Point.fromLngLat(s.getCoordinates().getY(), s.getCoordinates().getX());
 		var fSensor = Feature.fromGeometry((Geometry)sensor);
 		
@@ -286,23 +316,19 @@ public class Drone {
 		this.featureList.add(fSensor);
 	}
 	
-	public void buildReadings() {
+	public FeatureCollection buildReadings() {
 		var path = LineString.fromLngLats(this.points);
 		var fPath = Feature.fromGeometry((Geometry)path);
 		
 		this.featureList.add(fPath);
 		
-		this.readings = FeatureCollection.fromFeatures(this.featureList);
+		return FeatureCollection.fromFeatures(this.featureList);
 	}
 	
 	// GETTERS AND SETTERS //
 	
 	public List<Move> getFlightPath() {
 		return this.flightPath;
-	}
-	
-	public FeatureCollection getReadings() {
-		return this.readings;
 	}
 	
 	public List<Feature> getFeatureList() {

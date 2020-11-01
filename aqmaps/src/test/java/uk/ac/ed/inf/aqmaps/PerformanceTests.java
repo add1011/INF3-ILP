@@ -70,7 +70,7 @@ public class PerformanceTests {
 						//System.out.println(pos);
 						//System.out.println("------");
 						
-						if (moves > worstPerformance) {
+						if (moves > worstPerformance && moves != 150) {
 							worstPerformance = moves;
 						}
 						
@@ -90,7 +90,7 @@ public class PerformanceTests {
 		
 		System.out.println("Average moves : " + averageMoves);
 		System.out.println("Tests done : " + testsDone);
-		System.out.println("Worst performance : " + worstPerformance);
+		System.out.println("Worst successful performance : " + worstPerformance);
 		System.out.println("Times the drone Failed : " + timesFailed);
 	}
 }

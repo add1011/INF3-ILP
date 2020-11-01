@@ -10,24 +10,7 @@ import com.mapbox.geojson.Point;
 
 public class PathFinder {
 	
-	/**
-	public static void main(String[] args) throws IOException, InterruptedException {		
-		var s = IO.readSensors("01", "01", "2020", "80");
-		var p = new Point2D.Double(55.9444, -3.1878);
-		
-		twoOpt(p, s);
-				
-		System.out.println(calcRouteLength(p, s));
-		
-		s = nearestNeighbor(p, s);
-		
-		System.out.println(calcRouteLength(p, s));
-		
-		s = twoOpt(p, s);
-		
-		System.out.println(calcRouteLength(p, s));
-	}
-	**/
+	private static List<Obstacle> noFlyZones;
 	
 	public static List<Sensor> twoOpt(Point2D startCoordinates, List<Sensor> s) {
 		List<Sensor> newRoute;
@@ -88,7 +71,7 @@ public class PathFinder {
 		var currentCoords = startCoords;
 		
 		while (requiredSensors.size() > 0) {
-			var closestSensor = findClosestSensor(requiredSensors, currentCoords);
+			var closestSensor = findClosestSensor(currentCoords, requiredSensors);
 			currentCoords = closestSensor.getCoordinates();
 			calculatedRoute.add(closestSensor);
 			requiredSensors.remove(closestSensor);
@@ -107,28 +90,28 @@ public class PathFinder {
 	    return angle;
 	}
 	
-	public static Obstacle checkIllegalMove(LineString move, List<Obstacle> noFlyZones) {
-		for (var building : noFlyZones) {
-			var buildingLineString = building.getShape().outer();
-			if (lineIntersectsBuilding(move, buildingLineString)) {
-				return building;
+	public static Obstacle checkIllegalMove(LineString move) {
+		for (var obstacle : noFlyZones) {
+			var obstacleLineString = obstacle.getShape().outer();
+			if (lineIntersectsObstacle(move, obstacleLineString)) {
+				return obstacle;
 			}
 		}
 		return null;
 	}
 	
-	private static Boolean lineIntersectsBuilding(LineString l, LineString building) {
+	private static Boolean lineIntersectsObstacle(LineString l, LineString obstacle) {
 		var intersects = false;
     	var p1 = l.coordinates().get(0);
     	var p2 = l.coordinates().get(1);
 
-	    for (var i = 0; i < building.coordinates().size(); i++) {
-	    	var q1 = building.coordinates().get(i);
+	    for (var i = 0; i < obstacle.coordinates().size(); i++) {
+	    	var q1 = obstacle.coordinates().get(i);
 	    	Point q2 = null;
-	    	if (i < building.coordinates().size()-1) {
-	    		q2 = building.coordinates().get(i+1);
+	    	if (i < obstacle.coordinates().size()-1) {
+	    		q2 = obstacle.coordinates().get(i+1);
 	    	} else {
-	    		q2 = building.coordinates().get(0);
+	    		q2 = obstacle.coordinates().get(0);
 	    	}
 	    		
 	    	var ua_t = (q2.longitude() - q1.longitude())*(p1.latitude() - q1.latitude()) - (q2.latitude() - q1.latitude()) * (p1.longitude() - q1.longitude());
@@ -146,7 +129,7 @@ public class PathFinder {
 	    return intersects;
 	}
 	
-	private static Sensor findClosestSensor(List<Sensor> possibleSensors, Point2D coords) {
+	private static Sensor findClosestSensor(Point2D coords, List<Sensor> possibleSensors) {
 		Sensor closestSensor = null;
 		var closestDistance = Double.MAX_VALUE;
 		
@@ -176,5 +159,9 @@ public class PathFinder {
 		routeLength += sensors.get(sensors.size()-1).getCoordinates().distance(startCoordinates);
 		
 		return routeLength;
+	}
+	
+	public static void setNoFlyZones(List<Obstacle> noFlyZonesInput) {
+		noFlyZones = noFlyZonesInput;
 	}
 }
