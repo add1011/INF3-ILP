@@ -87,81 +87,26 @@ public class Drone {
 		var x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
 		var y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
 		
+		
 		//////////////////////////////////////////////////////////////////////////////////////////////////
 		/** if the drone is about to move out of bounds to get to the target, set the next best direction/
-		/*  according to which end of the boundary the drone is at.									   **/
+		/*  according to which end of the boundary the drone is at,									   **/
 		var intersectsBoundary = false;		
 		var whatWay = PathFinder.isOutofBounds(new Point2D.Double(x, y), angle);
-		/**
-		if (y >= -3.184319) {
-			if (angle < 180) {
-				whatWay = 10;
-			} else {
-				whatWay = -10;
-			}
-		// breaching left boundary
-		} else if (y <= -3.192473) {
-			if (angle < 180) {
-				whatWay = -10;
-			} else {
-				whatWay = 10;
-			}
-		// breaching top boundary
-		} else if (x >= 55.946233) {
-			if (angle < 270 && 90 <= angle) {
-				whatWay = 10;
-			} else {
-				whatWay = -10;
-			}
-		// breaching bottom boundary
-		} else if (x <= 55.942617) {
-			if (angle < 270 && 90 <= angle) {
-				whatWay = -10;
-			} else {
-				whatWay = 10;
-			}
-		}
-		**/
 		
 		if (whatWay != 0) {
 			intersectsBoundary = true;
 		}
 				
 		while (intersectsBoundary != false) {
-			// find where the next 
-			//var point = this.getNextBestMove(angle, whatWay);
-			//x = point.getX();
-			//y = point.getY();
-			
+			// move the angle to the either clockwise or anti-clockwise
 			angle += whatWay;
 			
-			// round the angle to the nearest ten as that is the range in which the drone can move
-			direction = (int)(Math.round(angle/10.0) * 10);
+			// get the next location to move to
+			var point = this.getNextBestMove(angle, whatWay);
 			
-			// ensure the direction of movement is within range use the modulo operator
-			direction = Math.abs(direction % 360);
-			
-			// if the next best direction is back the way it came, try three more than that to not get caught in a loop
-			//if (direction == ((this.lastMove + 180) % 360)) {
-			//	direction = Math.abs((direction + 3 * whatWay) % 360);
-			//}
-			
-			// use basic planar trigonometry to find the position of the new point
-			x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
-			y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
-			
-			if (this.points.size() > 3) {
-				for (Point point : this.points.subList(this.points.size()-4, this.points.size())) {
-					Point2D pointt = new Point2D.Double(point.latitude(), point.longitude());
-					if (pointt.equals(new Point2D.Double(x, y))) {
-						direction = Math.abs((direction + 3 * whatWay) % 360);
-						
-						// use basic planar trigonometry to find the position of the new point
-						x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
-						y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
-					}
-				}
-			}
+			x = point.getX();
+			y = point.getY();
 			
 			if (y < -3.184319 && y > -3.192473 && x < 55.946233 && x > 55.942617) {
 				intersectsBoundary = false;
@@ -169,7 +114,7 @@ public class Drone {
 		}
 		//////////////////////////////////////////////////////////////////////////////////////////////////
 		
-		
+		//////////////////////////////////////////////////////////////////////////////////////////////////
 		List<Point> p = new ArrayList<>();
 		p.add(Point.fromLngLat(this.coordinates.getY(), this.coordinates.getX()));
 		p.add(Point.fromLngLat(y, x));
@@ -195,49 +140,17 @@ public class Drone {
 			var keepDir = false;
 			
 			while (true) {
-				// move the angle to the calculated next direction to go to
-			    //var point = this.getNextBestMove(angle, whatWay);
-				
-			    
+				// move the angle to the either clockwise or anti-clockwise
 				angle += whatWay;
 				
-				// round the angle to the nearest ten as that is the range in which the drone can move
-				direction = (int)(Math.round(angle/10.0) * 10);
-				
-				// ensure the direction of movement is within range use the modulo operator
-				direction = Math.abs(direction % 360);
-				
-				// if the next best direction is back the way it came, try three more than that to not get caught in a loop
-				//if (direction == ((this.lastMove + 180) % 360)) {
-				//	direction = Math.abs((direction + 3 * whatWay) % 360);
-				//}
-				
-				// use basic planar trigonometry to find the position of the new point
-				x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
-				y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
-				
-				if (this.points.size() > 3) {
-					for (Point point : this.points.subList(this.points.size()-4, this.points.size())) {
-						Point2D pointt = new Point2D.Double(point.latitude(), point.longitude());
-						if (pointt.equals(new Point2D.Double(x, y))) {
-							direction = Math.abs((direction + 3 * whatWay) % 360);
-							
-							// use basic planar trigonometry to find the position of the new point
-							x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
-							y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
-						}
-					}
-				}
-				
+				// get the next location to move to
+			    var nextLocation = this.getNextBestMove(angle, whatWay);
 			    
-			    //x = point.getX();
-			    //y = point.getY();
-				var point = new Point2D.Double(x, y);
-				
-				// PathFinder.isOutofBounds(point, 0) != 0
-			    // (y >= -3.184319 || y <= -3.192473 || x >= 55.946233 || x <= 55.942617)
+			    x = nextLocation.getX();
+			    y = nextLocation.getY();
+			    			
 				// if the new path exits the boundary, go the other way around the building
-				if (PathFinder.isOutofBounds(point, 0) != 0 && keepDir == false) {
+				if (PathFinder.isOutofBounds(nextLocation, 0) != 0 && keepDir == false) {
 					keepDir = true;
 					whatWay *= -1;
 					continue;
@@ -250,15 +163,15 @@ public class Drone {
 				path = LineString.fromLngLats(p);
 				
 				b = PathFinder.checkIllegalMove(path);
-				
-				// PathFinder.isOutofBounds(point, 0) == 0
-				// y < -3.184319 && y > -3.192473 && x < 55.946233 && x > 55.942617
+
 				// if the new location does not enter a no-fly-zone and does not exit the boundaries, break the loop
-				if (b == null && PathFinder.isOutofBounds(point, 0) == 0) {
+				if (b == null && PathFinder.isOutofBounds(nextLocation, 0) == 0) {
 					break;
 				}
 			}
 		}
+		//////////////////////////////////////////////////////////////////////////////////////////////////
+
 		
 		// update the location of the drone
 		this.coordinates.setLocation(x, y);
@@ -284,19 +197,16 @@ public class Drone {
 	///////////////////////////////////////// HELPER FUNCTIONS /////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	private Point2D getNextBestMove(double angle, int whatWay) {
-		angle += whatWay;
-		
+	private Point2D avoidBuilding() {
+		return null;
+	}
+	
+	private Point2D getNextBestMove(double angle, int whatWay) {		
 		// round the angle to the nearest ten as that is the range in which the drone can move
 		var direction = (int)(Math.round(angle/10.0) * 10);
 		
 		// ensure the direction of movement is within range use the modulo operator
 		direction = Math.abs(direction % 360);
-		
-		// if the next best direction is back the way it came, try three more than that to not get caught in a loop
-		//if (direction == ((this.lastMove + 180) % 360)) {
-		//	direction = Math.abs((direction + 3 * whatWay) % 360);
-		//}
 		
 		// use basic planar trigonometry to find the position of the new point
 		var x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
