@@ -4,10 +4,21 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.mapbox.geojson.Feature;
+import com.mapbox.geojson.Geometry;
 import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
 
 public class PathFinder {
+	// the coordinates of the limits are stored as arrays, with the first value being the longitude and the second being the latitude
+	// North West corner
+	private static final double[] NW = {-3.192473, 55.946233};
+	// North East corner
+	private static final double[] NE = {-3.184319, 55.946233};
+	// South East corner
+	private static final double[] SE = {-3.184319, 55.942617};
+	// South West corner
+	private static final double[] SW = {-3.192473, 55.942617};
 	
 	private static List<Obstacle> noFlyZones;
 	
@@ -42,6 +53,87 @@ public class PathFinder {
 		return s;
 	}
 	
+	public static List<Sensor> nearestNeighbor(Point2D startCoords, List<Sensor> requiredSensors) {
+		var calculatedRoute = new ArrayList<Sensor>();
+		var currentCoords = startCoords;
+		
+		while (requiredSensors.size() > 0) {
+			var closestSensor = findClosestSensor(currentCoords, requiredSensors);
+			currentCoords = closestSensor.getCoordinates();
+			calculatedRoute.add(closestSensor);
+			requiredSensors.remove(closestSensor);
+		}
+		return calculatedRoute;
+	}
+	
+	public static Feature makeSensorFeature(double x, double y, String location, String colour, String symbol) {
+		var sensor = Point.fromLngLat(y, x);
+		var fSensor = Feature.fromGeometry((Geometry)sensor);
+		fSensor.addStringProperty("location", location);
+		fSensor.addStringProperty("rgb-string", colour);
+		fSensor.addStringProperty("marker-color", colour);
+		fSensor.addStringProperty("marker-symbol", symbol);
+		return fSensor;
+	}
+	
+	public static double getAngle(Point2D start, Point2D target) {
+		// use atan2 function to get the angle to the given point
+		var angle = Math.toDegrees(Math.atan2(target.getX() - start.getX(), target.getY() - start.getY()));
+	    // correct angles which are negative(which occurs if target is positioned below the current position)
+		if(angle < 0){
+	        angle += 360;
+	    }
+	    
+	    return angle;
+	}
+	
+	public static Obstacle checkIllegalMove(LineString move) {
+		for (var obstacle : noFlyZones) {
+			var obstacleLineString = obstacle.getShape().outer();
+			if (lineIntersectsObstacle(move, obstacleLineString)) {
+				return obstacle;
+			}
+		}
+		return null;
+	}
+	
+	public static int isOutofBounds(Point2D p, double angle) {
+		if (p.getY() >= NE[0]) {
+			if (angle < 180) {
+				return 10;
+			} else {
+				return -10;
+			}
+		// breaching left boundary
+		} else if (p.getY() <= SW[0]) {
+			if (angle < 180) {
+				return -10;
+			} else {
+				return 10;
+			}
+		// breaching top boundary
+		} else if (p.getX() >= NW[1]) {
+			if (angle < 270 && 90 <= angle) {
+				return 10;
+			} else {
+				return -10;
+			}
+		// breaching bottom boundary
+		} else if (p.getX() <= SE[1]) {
+			if (angle < 270 && 90 <= angle) {
+				return -10;
+			} else {
+				return 10;
+			}
+		} else {
+			return 0;
+		}
+	}
+	
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////// HELPER FUNCTIONS /////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
 	private static List<Sensor> twoOptSwap(List<Sensor> route, int i, int k) {
 		List<Sensor> newRoute = new ArrayList<>();
 		
@@ -65,38 +157,18 @@ public class PathFinder {
 		return newRoute;
 	}
 	
-	public static List<Sensor> nearestNeighbor(Point2D startCoords, List<Sensor> requiredSensors) {
-		var calculatedRoute = new ArrayList<Sensor>();
-		var currentCoords = startCoords;
+	private static Sensor findClosestSensor(Point2D coords, List<Sensor> possibleSensors) {
+		Sensor closestSensor = null;
+		var closestDistance = Double.MAX_VALUE;
 		
-		while (requiredSensors.size() > 0) {
-			var closestSensor = findClosestSensor(currentCoords, requiredSensors);
-			currentCoords = closestSensor.getCoordinates();
-			calculatedRoute.add(closestSensor);
-			requiredSensors.remove(closestSensor);
-		}
-		return calculatedRoute;
-	}
-	
-	public static double getAngle(Point2D start, Point2D target) {
-		// use atan2 function to get the angle to the given point
-		var angle = Math.toDegrees(Math.atan2(target.getX() - start.getX(), target.getY() - start.getY()));
-	    // correct angles which are negative(which occurs if target is positioned below the current position)
-		if(angle < 0){
-	        angle += 360;
-	    }
-	    
-	    return angle;
-	}
-	
-	public static Obstacle checkIllegalMove(LineString move) {
-		for (var obstacle : noFlyZones) {
-			var obstacleLineString = obstacle.getShape().outer();
-			if (lineIntersectsObstacle(move, obstacleLineString)) {
-				return obstacle;
+		for (var sensor : possibleSensors) {
+			var distance = coords.distance(sensor.getCoordinates());
+			if (distance < closestDistance ) {
+				closestSensor = sensor;
+				closestDistance = distance;
 			}
 		}
-		return null;
+		return closestSensor;
 	}
 	
 	private static Boolean lineIntersectsObstacle(LineString l, LineString obstacle) {
@@ -128,20 +200,6 @@ public class PathFinder {
 	    return intersects;
 	}
 	
-	private static Sensor findClosestSensor(Point2D coords, List<Sensor> possibleSensors) {
-		Sensor closestSensor = null;
-		var closestDistance = Double.MAX_VALUE;
-		
-		for (var sensor : possibleSensors) {
-			var distance = coords.distance(sensor.getCoordinates());
-			if (distance < closestDistance ) {
-				closestSensor = sensor;
-				closestDistance = distance;
-			}
-		}
-		return closestSensor;
-	}
-	
 	private static double calcRouteLength(Point2D startCoordinates, List<Sensor> sensors) {
 		double routeLength = 0;
 		
@@ -159,6 +217,8 @@ public class PathFinder {
 		
 		return routeLength;
 	}
+	
+	// SETTERS //
 	
 	public static void setNoFlyZones(List<Obstacle> noFlyZonesInput) {
 		noFlyZones = noFlyZonesInput;

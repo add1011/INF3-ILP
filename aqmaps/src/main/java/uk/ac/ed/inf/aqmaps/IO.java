@@ -75,18 +75,22 @@ public class IO {
 		int l = 1;
 		for (var move : flightPath) {
 			var line = l + ","
-						+ move.beforeLng + ","
-						+ move.beforeLat + ","
-						+ move.direction + ","
-						+ move.afterLng + ","
-						+ move.afterLat + ","
-						+ move.words;
+						+ move.getBeforeLng() + ","
+						+ move.getBeforeLat() + ","
+						+ move.getDirection() + ","
+						+ move.getAfterLng() + ","
+						+ move.getAfterLat() + ","
+						+ move.getWords();
 			lines.add(line);
 			l++;
 		}
 		var file = Paths.get("flightpath-"+day+"-"+month+"-"+year+".txt");
 		Files.write(file, lines);
 	}
+	
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////// HELPER FUNCTIONS /////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	private static Point2D wordsToCoords(String port, String words) throws IOException, InterruptedException {
 		String[] w = words.split("\\.");

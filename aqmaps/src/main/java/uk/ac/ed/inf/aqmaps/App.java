@@ -4,10 +4,6 @@ import java.awt.geom.Point2D;
 import java.io.IOException;
 import java.util.List;
 
-import com.mapbox.geojson.Feature;
-import com.mapbox.geojson.Geometry;
-import com.mapbox.geojson.Point;
-
 public class App 
 {	
 	// Execute the program
@@ -51,13 +47,12 @@ public class App
             	System.out.println("The drone did not complete the plan as it ran out of moves...");
         		// fill out the remaining sensors as they were not visited
         		while (flightPlan.isEmpty() != true) {
-        			var sensor = Point.fromLngLat(flightPlan.get(0).getCoordinates().getY(), flightPlan.get(0).getCoordinates().getX());
-        			var fSensor = Feature.fromGeometry((Geometry)sensor);
-        			fSensor.addStringProperty("location", flightPlan.get(0).getLocation());
-        			fSensor.addStringProperty("rgb-string", "#aaaaaa");
-        			fSensor.addStringProperty("marker-color", "#aaaaaa");
-        			fSensor.addStringProperty("marker-symbol", "");
-        			drone.getFeatureList().add(fSensor);
+        			var sensorFeature = PathFinder.makeSensorFeature(flightPlan.get(0).getCoordinates().getX(),
+        					flightPlan.get(0).getCoordinates().getY(),
+        					flightPlan.get(0).getLocation(),
+        					"#aaaaaa",
+        					"");
+        			drone.getFeatureList().add(sensorFeature);
         			flightPlan.remove(0);
         		}
         	} else {
