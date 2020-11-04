@@ -100,7 +100,7 @@ public class Drone {
 				
 		while (intersectsBoundary != false) {
 			// move the angle to the either clockwise or anti-clockwise
-			angle += whatWay;
+			angle = (angle + whatWay) - Math.floor((angle + whatWay)/360.0) * 360.0;
 			
 			// get the next location to move to
 			var point = this.getNextBestMove(angle, whatWay);
@@ -121,12 +121,18 @@ public class Drone {
 		var path = LineString.fromLngLats(p);
 		var b = PathFinder.checkIllegalMove(path);
 		
+		
 		// if the planned move is illegal (flies the drone into a no-fly zone) then find the next best direction to go
 		if (b != null) {
 			// find the angle from the drone to the centre of the building
 			var angleToBuilding = PathFinder.getAngle(this.coordinates, b.getCentre());
 			// find the angle to the goal relative to the angle to the building
 			var relativeAngle = (angle + (360 - angleToBuilding)) % 360;
+			
+			//System.out.println("Move : " + (150 - this.movesLeft));
+			//System.out.println("Original Angle : " + angle);
+			//System.out.println("angleToBuilding : " + angleToBuilding);
+			//System.out.println("relativeAngle : " + relativeAngle);
 
 			// if the angle from the drone to the goal is less than the angle to the building then go clockwise around the building
 			if (relativeAngle > 180) {
@@ -134,21 +140,23 @@ public class Drone {
 			} else {
 				whatWay = 10;
 			}
-			
+						
 			/** used in the following while loop to commit to one direction to eliminate the risk of getting stuck going/
 			/*  back and forth. 																					  **/
 			var keepDir = false;
 			
+			
 			while (true) {
 				// move the angle to the either clockwise or anti-clockwise
-				angle += whatWay;
+				angle = (angle + whatWay) - Math.floor((angle + whatWay)/360.0) * 360.0;
+				//System.out.println("Planned angle : " + angle);
 				
 				// get the next location to move to
 			    var nextLocation = this.getNextBestMove(angle, whatWay);
 			    
 			    x = nextLocation.getX();
 			    y = nextLocation.getY();
-			    			
+			    
 				// if the new path exits the boundary, go the other way around the building
 				if (PathFinder.isOutofBounds(nextLocation, 0) != 0 && keepDir == false) {
 					keepDir = true;
@@ -163,15 +171,16 @@ public class Drone {
 				path = LineString.fromLngLats(p);
 				
 				b = PathFinder.checkIllegalMove(path);
-
+				
 				// if the new location does not enter a no-fly-zone and does not exit the boundaries, break the loop
 				if (b == null && PathFinder.isOutofBounds(nextLocation, 0) == 0) {
+					//System.out.println("After angle : " + Math.abs((angle % 360)));
+					//System.out.println("------------------------------------");
 					break;
 				}
 			}
 		}
 		//////////////////////////////////////////////////////////////////////////////////////////////////
-
 		
 		// update the location of the drone
 		this.coordinates.setLocation(x, y);

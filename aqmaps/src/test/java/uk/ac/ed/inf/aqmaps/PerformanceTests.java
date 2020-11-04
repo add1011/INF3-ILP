@@ -61,13 +61,9 @@ public class PerformanceTests {
 						
 						if (moves == 150) {
 							timesFailed++;
-							System.out.println(d + " : " + m + " : " + y);
 							System.out.println(pos);
 							System.out.println("------");
 						}
-						
-						//System.out.println(pos);
-						//System.out.println("------");
 						
 						if (moves > worstPerformance && moves != 150) {
 							worstPerformance = moves;
@@ -77,7 +73,6 @@ public class PerformanceTests {
 						testsDone++;
 					}
 					System.out.println("------");
-					//System.out.println("-------------------------------");
 				}
 			}
 		}
@@ -88,8 +83,8 @@ public class PerformanceTests {
 		averageMoves = averageMoves / testsDone;
 		
 		System.out.println("Average moves : " + averageMoves);
-		System.out.println("Tests done : " + testsDone);
 		System.out.println("Worst successful performance : " + worstPerformance);
+		System.out.println("Tests done : " + testsDone);
 		System.out.println("Times the drone Failed : " + timesFailed);
 	}
 }
