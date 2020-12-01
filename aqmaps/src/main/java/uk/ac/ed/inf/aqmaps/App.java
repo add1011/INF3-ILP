@@ -7,11 +7,11 @@ import java.util.List;
 public class App 
 {	
 	// Execute the program
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) {
         run(args);
     }
     
-    public static void run(String[] args) throws IOException, InterruptedException {
+    public static void run(String[] args) {
     	var day = args[0];
     	if (day.length() == 1) {
     		day = "0" + day;

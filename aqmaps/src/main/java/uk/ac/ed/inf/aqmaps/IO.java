@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -20,16 +21,29 @@ import com.mapbox.geojson.FeatureCollection;
 import com.mapbox.geojson.Polygon;
 
 public class IO {	
-	private static HttpClient client = HttpClient.newBuilder()
+	private static final HttpClient client = HttpClient.newBuilder()
 			.connectTimeout(Duration.ofSeconds(10))
 			.build();
 	
-	public static List<Sensor> readSensors(String day, String month, String year, String port) throws IOException, InterruptedException {
+	public static List<Sensor> readSensors(String day, String month, String year, String port) {
 		var request = HttpRequest.newBuilder()
 				.uri(URI.create("http://localhost:"+port+"/maps/"+year+"/"+month+"/"+day+"/air-quality-data.json"))
 				.GET()
-				.build();
-		var response = client.send(request, BodyHandlers.ofString());
+				.build();		
+
+		HttpResponse<String> response = null;
+		
+		try {
+			response = client.send(request, BodyHandlers.ofString());
+		} catch (IOException | InterruptedException e) {
+			System.out.println("Fatal error: Unable to connect to the server at port " + port + ".");
+			System.exit(1);
+		}
+		
+		if (response.statusCode() == 404) {
+			System.out.println("Unable to find the sensor data for the given date on the server. Terminating...");
+			System.exit(1);
+		}
 
 		var gson = new Gson();
 				
@@ -42,12 +56,24 @@ public class IO {
 		return sensors;
 	}
 	
-	public static List<Obstacle> readBuildings(String port) throws IOException, InterruptedException {
+	public static List<Obstacle> readBuildings(String port) {
 		var request = HttpRequest.newBuilder()
 				.uri(URI.create("http://localhost:"+port+"/buildings/no-fly-zones.geojson"))
 				.GET()
 				.build();
-		var response = client.send(request, BodyHandlers.ofString());
+		
+		HttpResponse<String> response = null;
+		try {
+			response = client.send(request, BodyHandlers.ofString());
+		} catch (IOException | InterruptedException e) {
+			System.out.println("Fatal error: Unable to connect to the server at port " + port + ".");
+			System.exit(1);
+		}
+		
+		if (response.statusCode() == 404) {
+			System.out.println("Unable to find the building data on the server. Terminating...");
+			System.exit(1);
+		}
 		
 		var fc = FeatureCollection.fromJson(response.body());
 		
@@ -64,13 +90,19 @@ public class IO {
 		return buildings;
 	}
 	
-	public static void writeReadings(FeatureCollection fc, String day, String month, String year) throws FileNotFoundException {
-		var out = new PrintWriter("readings-"+day+"-"+month+"-"+year+".geojson");
+	public static void writeReadings(FeatureCollection fc, String day, String month, String year) {
+		PrintWriter out = null;
+		try {
+			out = new PrintWriter("readings-"+day+"-"+month+"-"+year+".geojson");
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
 		out.print(fc.toJson());
 		out.close();
 	}
 	
-	public static void writeFlightPath(List<Move> flightPath, String day, String month, String year) throws IOException {
+	public static void writeFlightPath(List<Move> flightPath, String day, String month, String year) {
 		List<String> lines = new ArrayList<>();
 		int l = 1;
 		for (var move : flightPath) {
@@ -85,22 +117,37 @@ public class IO {
 			l++;
 		}
 		var file = Paths.get("flightpath-"+day+"-"+month+"-"+year+".txt");
-		Files.write(file, lines);
+		try {
+			Files.write(file, lines);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////// HELPER FUNCTIONS /////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	private static Point2D wordsToCoords(String port, String words) throws IOException, InterruptedException {
+	private static Point2D wordsToCoords(String port, String words) {
 		String[] w = words.split("\\.");
 		var request = HttpRequest.newBuilder()
 				.uri(URI.create("http://localhost:"+port+"/words/"+w[0]+"/"+w[1]+"/"+w[2]+"/details.json"))
 				.GET()
 				.build();
-		var response = client.send(request, BodyHandlers.ofString());
 		
-		//var parser = new JsonParser();
+		HttpResponse<String> response = null;
+		try {
+			response = client.send(request, BodyHandlers.ofString());
+		} catch (IOException | InterruptedException e) {
+			System.out.println("Fatal error: Unable to connect to the server at port " + port + ".");
+			System.exit(1);
+		}
+		
+		if (response.statusCode() == 404) {
+			System.out.println("Unable to find the word data for the given date on the server. Terminating...");
+			System.exit(1);
+		}
+		
 		var obj = JsonParser.parseString(response.body()).getAsJsonObject();
 		var coordinatesObj = obj.get("coordinates").getAsJsonObject();
 		
