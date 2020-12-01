@@ -31,15 +31,15 @@ public class Drone {
 	
 	// METHODS //
 	public Boolean getToSensor(Sensor s) {
-		while (this.coordinates.distance(s.getCoordinates()) > 0.0002) {
+		while (true) {
 			// get the angle to towards the point
 			var angle = PathFinder.getAngle(this.coordinates, s.getCoordinates());
 			// move towards the point once using the calculated angle
 			var move = this.move(angle);
 			
-			// if move is null, then the drone is either out of moves or tried to go out of bounds
+			// if move is null, then the drone is out of moves
 			if (move == null) {
-				// return false to indicate to App that the drone will no longer be moving
+				// return false to indicate to 'App' that the drone has run out of moves
 				return false;
 			}
 			
@@ -51,9 +51,9 @@ public class Drone {
 				this.checkSensor(s);
 				move.setWords(s.getLocation());
 				this.flightPath.add(move);
+				return true;
 			}
 		}
-		return true;
 	}
 	
 	public Boolean getToPoint(Point2D p) {
@@ -72,6 +72,16 @@ public class Drone {
 		return true;
 	}
 	
+	public FeatureCollection buildReadings() {
+		var path = LineString.fromLngLats(this.points);
+		var fPath = Feature.fromGeometry((Geometry)path);
+		this.featureList.add(fPath);
+		return FeatureCollection.fromFeatures(this.featureList);
+	}
+	
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////// HELPER FUNCTIONS /////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	private Move move(double angle) {
 		// do not execute if the drone does not have any moves left
 		if (this.movesLeft < 1) {
@@ -80,48 +90,39 @@ public class Drone {
 		// round the angle to the nearest ten as that is the range in which the drone can move
 		var direction = (int)(Math.round(angle/10.0) * 10);
 		
-		// ensure the direction of movement is within range use the modulo operator
+		// ensure the direction of movement is within range using the modulo operator
 		direction = Math.abs(direction % 360);
 		
-		// use basic planar trigonometry to find the position of the new point
-		var x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
-		var y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
-		
+		// find the new location of the drone if it moved in the given direction
+		var p = this.getNewLocation(direction);
+		var x = p.getX();
+		var y = p.getY();
 		
 		//////////////////////////////////////////////////////////////////////////////////////////////////
 		/** if the drone is about to move out of bounds to get to the target, set the next best direction/
-		/*  according to which end of the boundary the drone is at,									   **/
-		var intersectsBoundary = false;		
+		/*  according to which end of the boundary the drone is at									   **/
 		var whatWay = PathFinder.isOutofBounds(new Point2D.Double(x, y), angle);
 		
 		if (whatWay != 0) {
-			intersectsBoundary = true;
-		}
+			while (true) {
+				// move the angle to the either clockwise or anti-clockwise direction
+				// also do maths to do modulo 360 for negative doubles
+				angle = (angle + whatWay) - Math.floor((angle + whatWay)/360.0) * 360.0;
 				
-		while (intersectsBoundary != false) {
-			// move the angle to the either clockwise or anti-clockwise
-			angle = (angle + whatWay) - Math.floor((angle + whatWay)/360.0) * 360.0;
-			
-			// get the next location to move to
-			var point = this.getNextBestMove(angle, whatWay);
-			
-			x = point.getX();
-			y = point.getY();
-			
-			if (y < -3.184319 && y > -3.192473 && x < 55.946233 && x > 55.942617) {
-				intersectsBoundary = false;
+				// get the next location to move to
+				var nextLocation = this.getNextBestMove(angle, whatWay);
+				x = nextLocation.getX();
+				y = nextLocation.getY();
+				
+				if (PathFinder.isOutofBounds(nextLocation, 0) == 0) {
+					break;
+				}
 			}
 		}
 		//////////////////////////////////////////////////////////////////////////////////////////////////
 		
 		//////////////////////////////////////////////////////////////////////////////////////////////////
-		List<Point> p = new ArrayList<>();
-		p.add(Point.fromLngLat(this.coordinates.getY(), this.coordinates.getX()));
-		p.add(Point.fromLngLat(y, x));
-		var path = LineString.fromLngLats(p);
-		var b = PathFinder.checkIllegalMove(path);
-		
-		
+		var b = this.isMoveinObstacle(new Point2D.Double(x, y));
 		// if the planned move is illegal (flies the drone into a no-fly zone) then find the next best direction to go
 		if (b != null) {
 			// find the angle from the drone to the centre of the building
@@ -129,53 +130,32 @@ public class Drone {
 			// find the angle to the goal relative to the angle to the building
 			var relativeAngle = (angle + (360 - angleToBuilding)) % 360;
 			
-			//System.out.println("Move : " + (150 - this.movesLeft));
-			//System.out.println("Original Angle : " + angle);
-			//System.out.println("angleToBuilding : " + angleToBuilding);
-			//System.out.println("relativeAngle : " + relativeAngle);
-
 			// if the angle from the drone to the goal is less than the angle to the building then go clockwise around the building
 			if (relativeAngle > 180) {
 				whatWay = -10;
 			} else {
 				whatWay = 10;
 			}
-						
-			/** used in the following while loop to commit to one direction to eliminate the risk of getting stuck going/
-			/*  back and forth. 																					  **/
-			var keepDir = false;
-			
 			
 			while (true) {
-				// move the angle to the either clockwise or anti-clockwise
+				// move the angle to the either clockwise or anti-clockwise direction
+				// also do maths to do modulo 360 for negative doubles
 				angle = (angle + whatWay) - Math.floor((angle + whatWay)/360.0) * 360.0;
-				//System.out.println("Planned angle : " + angle);
 				
 				// get the next location to move to
 			    var nextLocation = this.getNextBestMove(angle, whatWay);
-			    
 			    x = nextLocation.getX();
 			    y = nextLocation.getY();
 			    
-				// if the new path exits the boundary, go the other way around the building
-				if (PathFinder.isOutofBounds(nextLocation, 0) != 0 && keepDir == false) {
-					keepDir = true;
-					whatWay *= -1;
+				// if the new path exits the boundary, try another angle
+				if (PathFinder.isOutofBounds(nextLocation, 0) != 0) {
 					continue;
 				}
 				
 				// create a path from the calculated direction to check if it intersects with a building
-				p = new ArrayList<>();
-				p.add(Point.fromLngLat(this.coordinates.getY(), this.coordinates.getX()));
-				p.add(Point.fromLngLat(y, x));
-				path = LineString.fromLngLats(p);
-				
-				b = PathFinder.checkIllegalMove(path);
-				
+				b = this.isMoveinObstacle(nextLocation);
 				// if the new location does not enter a no-fly-zone and does not exit the boundaries, break the loop
-				if (b == null && PathFinder.isOutofBounds(nextLocation, 0) == 0) {
-					//System.out.println("After angle : " + Math.abs((angle % 360)));
-					//System.out.println("------------------------------------");
+				if (b == null) {
 					break;
 				}
 			}
@@ -185,6 +165,7 @@ public class Drone {
 		// update the location of the drone
 		this.coordinates.setLocation(x, y);
 		
+		// add this new location to the list of points the drone has been at
 		this.points.add(Point.fromLngLat(y, x));
 		
 		// remove one move from the number of moves left
@@ -193,21 +174,13 @@ public class Drone {
 		return new Move(this.coordinates.getY(),this.coordinates.getX(),direction,x,y);
 	}
 	
-	public FeatureCollection buildReadings() {
-		var path = LineString.fromLngLats(this.points);
-		var fPath = Feature.fromGeometry((Geometry)path);
-		
-		this.featureList.add(fPath);
-		
-		return FeatureCollection.fromFeatures(this.featureList);
-	}
-	
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////// HELPER FUNCTIONS /////////////////////////////////////////////////////
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	
-	private Point2D avoidBuilding() {
-		return null;
+	private Obstacle isMoveinObstacle(Point2D p) {
+		// create a path from the input coordinates to check if it intersects with a building line string
+		List<Point> ps = new ArrayList<>();
+		ps.add(Point.fromLngLat(this.coordinates.getY(), this.coordinates.getX()));
+		ps.add(Point.fromLngLat(p.getY(), p.getX()));
+		var path = LineString.fromLngLats(ps);
+		return PathFinder.checkIllegalMove(path);
 	}
 	
 	private Point2D getNextBestMove(double angle, int whatWay) {		
@@ -217,9 +190,10 @@ public class Drone {
 		// ensure the direction of movement is within range use the modulo operator
 		direction = Math.abs(direction % 360);
 		
-		// use basic planar trigonometry to find the position of the new point
-		var x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
-		var y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
+		// find the new location of the drone if it moved in the given direction
+		var p = this.getNewLocation(direction);
+		var x = p.getX();
+		var y = p.getY();
 		
 		if (this.points.size() > 3) {
 			for (var point : this.points.subList(this.points.size()-4, this.points.size())) {
@@ -227,12 +201,20 @@ public class Drone {
 				if (pointt.equals(new Point2D.Double(x, y))) {
 					direction = Math.abs((direction + 3 * whatWay) % 360);
 					
-					// use basic planar trigonometry to find the position of the new point
-					x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
-					y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
+					// find the new location of the drone if it moved in the given direction
+					p = this.getNewLocation(direction);
+					x = p.getX();
+					y = p.getY();
 				}
 			}
 		}
+		
+		return new Point2D.Double(x, y);
+	}
+	
+	private Point2D getNewLocation(int direction) {
+		var x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
+		var y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
 		
 		return new Point2D.Double(x, y);
 	}

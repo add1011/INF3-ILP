@@ -22,6 +22,12 @@ public class App
     	}
         var year = args[2];
         var startCoordinates = new Point2D.Double(Double.parseDouble(args[3]), Double.parseDouble(args[4]));
+        
+        // if the start position is out of bounds throw an illegal argument exception
+        if (PathFinder.isOutofBounds(startCoordinates, 0) != 0) {
+        	throw new IllegalArgumentException("Given start position is out of bounds");
+        }
+        
     	@SuppressWarnings("unused")
         var seed = args[5];
         var port = args[6];

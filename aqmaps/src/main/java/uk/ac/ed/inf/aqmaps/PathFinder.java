@@ -23,23 +23,28 @@ public class PathFinder {
 	private static List<Obstacle> noFlyZones;
 	
 	public static List<Sensor> twoOpt(Point2D startCoordinates, List<Sensor> s) {
+		var iLimit = s.size() - 2;
+		var kLimit = s.size() - 1;
+		
+		// declare variables that are going to be used
 		List<Sensor> newRoute;
 		double newRouteLength;
+		Boolean improvementMade;
+		// calculate the route length of the given route 
 		var bestRouteLength = calcRouteLength(startCoordinates, s);
-		var improvementMade = true;
 		
 		// repeat until no improvements are made
-		while (improvementMade == true) {
+		while (true) {
 			improvementMade = false;
 			
-			for(var i = 1; i < s.size()-2; i++) {
-				for (var k = i+1; k < s.size()-1; k++) {
-					
-					if ((s.get(i).getCoordinates().distance(s.get(k + 1).getCoordinates()) + s.get(i - 1).getCoordinates().distance(s.get(k).getCoordinates())) <= 
-						(s.get(i).getCoordinates().distance(s.get(i - 1).getCoordinates()) + s.get(k + 1).getCoordinates().distance(s.get(k).getCoordinates()))) {
+			for(var i = 1; i < iLimit; i++) {
+				for (var k = i+1; k < kLimit; k++) {
+					if ((s.get(i).getCoordinates().distance(s.get(k+1).getCoordinates()) + s.get(i-1).getCoordinates().distance(s.get(k).getCoordinates())) <= 
+						(s.get(i).getCoordinates().distance(s.get(i-1).getCoordinates()) + s.get(k+1).getCoordinates().distance(s.get(k).getCoordinates()))) {
 						newRoute = twoOptSwap(s, i, k);
 						newRouteLength = calcRouteLength(startCoordinates, newRoute);
 						
+						// if swapping the nodes improved the route length then set this new found route as the best route so far
 						if (newRouteLength < bestRouteLength) {
 							s = newRoute;
 							bestRouteLength = newRouteLength;
@@ -49,8 +54,11 @@ public class PathFinder {
 					
 				}
 			}
+			
+			if (improvementMade == false) {
+				return s;
+			}
 		}
-		return s;
 	}
 	
 	public static List<Sensor> nearestNeighbor(Point2D startCoords, List<Sensor> requiredSensors) {
@@ -173,21 +181,21 @@ public class PathFinder {
 	
 	private static Boolean lineIntersectsObstacle(LineString l, LineString obstacle) {
 		var intersects = false;
-    	var p1 = l.coordinates().get(0);
-    	var p2 = l.coordinates().get(1);
+    	var m1 = l.coordinates().get(0);
+    	var m2 = l.coordinates().get(1);
 
 	    for (var i = 0; i < obstacle.coordinates().size(); i++) {
-	    	var q1 = obstacle.coordinates().get(i);
-	    	Point q2 = null;
+	    	var o1 = obstacle.coordinates().get(i);
+	    	Point o2 = null;
 	    	if (i < obstacle.coordinates().size()-1) {
-	    		q2 = obstacle.coordinates().get(i+1);
+	    		o2 = obstacle.coordinates().get(i+1);
 	    	} else {
-	    		q2 = obstacle.coordinates().get(0);
+	    		o2 = obstacle.coordinates().get(0);
 	    	}
 	    		
-	    	var ua_t = (q2.longitude() - q1.longitude())*(p1.latitude() - q1.latitude()) - (q2.latitude() - q1.latitude()) * (p1.longitude() - q1.longitude());
-	    	var ub_t = (p2.longitude() - p1.longitude()) * (p1.latitude() - q1.latitude()) - (p2.latitude() - p1.latitude()) * (p1.longitude() - q1.longitude());
-	    	var u_b = (q2.latitude() - q1.latitude()) * (p2.longitude() - p1.longitude()) - (q2.longitude() - q1.longitude()) * (p2.latitude() - p1.latitude());
+	    	var ua_t = (o2.longitude() - o1.longitude())*(m1.latitude() - o1.latitude()) - (o2.latitude() - o1.latitude()) * (m1.longitude() - o1.longitude());
+	    	var ub_t = (m2.longitude() - m1.longitude()) * (m1.latitude() - o1.latitude()) - (m2.latitude() - m1.latitude()) * (m1.longitude() - o1.longitude());
+	    	var u_b = (o2.latitude() - o1.latitude()) * (m2.longitude() - m1.longitude()) - (o2.longitude() - o1.longitude()) * (m2.latitude() - m1.latitude());
 	    	
 	    	if (u_b != 0) {
 	    		var ua = ua_t / u_b;

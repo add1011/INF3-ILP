@@ -11,6 +11,7 @@ public class PerformanceTests {
 	public void testPerformance() throws IOException, InterruptedException {
 		var averageMoves = 0.0;
 		var timesFailed = 0;
+		var bestPerformance = 150;
 		var worstPerformance = 0;
 		var testsDone = 0;
 		
@@ -26,7 +27,7 @@ public class PerformanceTests {
 					var y = String.valueOf(year);
 					
 					System.out.println(d + " : " + m + " : " + y);
-										
+					
 					for (var startPos = 0; startPos < 5; startPos++) {
 						
 						var startLat = "";
@@ -67,6 +68,8 @@ public class PerformanceTests {
 						
 						if (moves > worstPerformance && moves != 150) {
 							worstPerformance = moves;
+						} else if (moves < bestPerformance) {
+							bestPerformance = moves;
 						}
 						
 						averageMoves += moves;
@@ -83,6 +86,7 @@ public class PerformanceTests {
 		averageMoves = averageMoves / testsDone;
 		
 		System.out.println("Average moves : " + averageMoves);
+		System.out.println("Best performance : " + bestPerformance);
 		System.out.println("Worst successful performance : " + worstPerformance);
 		System.out.println("Tests done : " + testsDone);
 		System.out.println("Times the drone Failed : " + timesFailed);
