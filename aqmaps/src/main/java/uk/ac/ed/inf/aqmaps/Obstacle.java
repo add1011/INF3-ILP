@@ -11,6 +11,7 @@ public class Obstacle {
 	public Obstacle(Polygon shape) {
 		this.shape = shape;
 		
+		// use the polygon to determine the centre of the obstacle
 		var lowestX = Double.POSITIVE_INFINITY;
 		var lowestY = Double.POSITIVE_INFINITY;
 		var largestX = Double.NEGATIVE_INFINITY;
@@ -31,6 +32,7 @@ public class Obstacle {
 			}
 		}
 		
+		// save the centre as an attribute
 		this.centre = new Point2D.Double(((largestY + lowestY) / 2), ((largestX + lowestX) / 2));
 	}
 	
