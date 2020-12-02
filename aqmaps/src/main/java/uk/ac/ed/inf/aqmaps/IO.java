@@ -20,10 +20,14 @@ import com.google.gson.reflect.TypeToken;
 import com.mapbox.geojson.FeatureCollection;
 import com.mapbox.geojson.Polygon;
 
-public class IO {	
+//make this class final to emulate a static class
+public final class IO {	
 	private static final HttpClient client = HttpClient.newBuilder()
 			.connectTimeout(Duration.ofSeconds(10))
 			.build();
+	
+	// do not allow this class to be instantiated
+	private IO() {}
 	
 	public static List<Sensor> readSensors(String day, String month, String year, String port) {
 		var request = HttpRequest.newBuilder()

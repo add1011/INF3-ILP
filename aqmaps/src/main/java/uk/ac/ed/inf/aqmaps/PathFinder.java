@@ -9,7 +9,8 @@ import com.mapbox.geojson.Geometry;
 import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
 
-public class PathFinder {
+// make this class final to emulate a static class
+public final class PathFinder {
 	// the coordinates of the limits are stored as arrays, with the first value being the longitude and the second being the latitude
 	// North West corner
 	private static final double[] NW = {-3.192473, 55.946233};
@@ -22,6 +23,9 @@ public class PathFinder {
 	
 	private static List<Obstacle> noFlyZones;
 	
+	// do not allow this class to be instantiated
+	private PathFinder() {}
+	
 	public static List<Sensor> twoOpt(Point2D startCoordinates, List<Sensor> s) {
 		var iLimit = s.size() - 2;
 		var kLimit = s.size() - 1;
@@ -30,7 +34,7 @@ public class PathFinder {
 		List<Sensor> newRoute;
 		double newRouteLength;
 		Boolean improvementMade;
-		// calculate the route length of the given route 
+		// calculate the route length of the given route
 		var bestRouteLength = calcRouteLength(startCoordinates, s);
 		
 		// repeat until no improvements are made

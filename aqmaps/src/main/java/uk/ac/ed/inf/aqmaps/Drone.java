@@ -30,7 +30,9 @@ public class Drone {
 	}
 	
 	// METHODS //
+	// moves the drone towards the given sensor. Once it is close enough, it reads the sensor.
 	public Boolean getToSensor(Sensor s) {
+		// keep trying to move until an exit condition is met
 		while (true) {
 			// get the angle to towards the point
 			var angle = PathFinder.getAngle(this.coordinates, s.getCoordinates());
@@ -44,18 +46,22 @@ public class Drone {
 			}
 			
 			// if the drone is outside of 0.0002 of the sensor, keep moving towards it
-			// if the drone is close enough, read the sensor
+			// either way, add the move to the flight path
 			if (this.coordinates.distance(s.getCoordinates()) > 0.0002) {
 				this.flightPath.add(move);
 			} else {
+				// if the drone is close enough, read the sensor
 				this.checkSensor(s);
+				// add the sensor words to the move before adding it to the flight path
 				move.setWords(s.getLocation());
 				this.flightPath.add(move);
+				// return true to indicate the drone reached the sensor and read it
 				return true;
 			}
 		}
 	}
 	
+	// moves the drone towards the given point
 	public Boolean getToPoint(Point2D p) {
 		while (this.coordinates.distance(p) > 0.0002) {
 			// get the angle to towards the point
@@ -63,15 +69,18 @@ public class Drone {
 			// move towards the point once using the calculated angle
 			var move = this.move(angle);
 			
+			// if move is null then the drone is out of moves so return false to indicate that
 			if (move == null) {
 				return false;
 			}
 			
+			// add the move to the flight path
 			this.flightPath.add(move);
 		}
 		return true;
 	}
 	
+	// merges 'points' and 'featureList' into a FeatureCollection and returns it
 	public FeatureCollection buildReadings() {
 		var path = LineString.fromLngLats(this.points);
 		var fPath = Feature.fromGeometry((Geometry)path);
@@ -82,6 +91,8 @@ public class Drone {
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////// HELPER FUNCTIONS /////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// moves the drone towards the closest multiple of 10 towards the given angle by a distance of 0.0003.
+	// returns a Move object consisting of the features of this movement. Returns null if the drone is out of moves.
 	private Move move(double angle) {
 		// do not execute if the drone does not have any moves left
 		if (this.movesLeft < 1) {
@@ -174,6 +185,7 @@ public class Drone {
 		return new Move(this.coordinates.getY(),this.coordinates.getX(),direction,x,y);
 	}
 	
+	// checks to see if a desired move intersects with an obstacle. If so, returns the obstacls it intersects with.
 	private Obstacle isMoveinObstacle(Point2D p) {
 		// create a path from the input coordinates to check if it intersects with a building line string
 		List<Point> ps = new ArrayList<>();
@@ -183,6 +195,9 @@ public class Drone {
 		return PathFinder.checkIllegalMove(path);
 	}
 	
+	// returns if the drone is about to go back to a point it has been in the last 4 moves
+	// If so, alter the direction by +-30 according to whatWay to avoid getting stuck.
+	// return where the drone ends up after moving
 	private Point2D getNextBestMove(double angle, int whatWay) {		
 		// round the angle to the nearest ten as that is the range in which the drone can move
 		var direction = (int)(Math.round(angle/10.0) * 10);
@@ -195,10 +210,14 @@ public class Drone {
 		var x = p.getX();
 		var y = p.getY();
 		
+		// check that the drone has visited 4 points first
 		if (this.points.size() > 3) {
+			// for all last 4 points
 			for (var point : this.points.subList(this.points.size()-4, this.points.size())) {
-				var pointt = new Point2D.Double(point.latitude(), point.longitude());
-				if (pointt.equals(new Point2D.Double(x, y))) {
+				var previouspoint = new Point2D.Double(point.latitude(), point.longitude());
+				// check to see if the new point is the same as a previous one
+				if (previouspoint.equals(new Point2D.Double(x, y))) {
+					// if so, alter direction
 					direction = Math.abs((direction + 3 * whatWay) % 360);
 					
 					// find the new location of the drone if it moved in the given direction
@@ -212,13 +231,16 @@ public class Drone {
 		return new Point2D.Double(x, y);
 	}
 	
+	// calculates where the drone will end up after moving in a given direction
 	private Point2D getNewLocation(int direction) {
+		// use trigonometry to figure out where the new coordinates are
 		var x = this.coordinates.getX() + 0.0003 * Math.sin(Math.toRadians(direction));
 		var y = this.coordinates.getY() + 0.0003 * Math.cos(Math.toRadians(direction));
 		
 		return new Point2D.Double(x, y);
 	}
 	
+	// read the given sensor and create a Feature with it's details. Add the Feature to featureList
 	private void checkSensor(Sensor s) {		
 		var colour = "";
 		var markerSymbol = "";
@@ -230,6 +252,7 @@ public class Drone {
 			reading = Double.parseDouble(s.getReading());
 		}
 		
+		// according to the reading or battery level, set the colour and symbol of the marker
 		if (reading < 0 || 256 < reading || battery < 10) {
 			colour = "#000000";
 			markerSymbol = "cross";
