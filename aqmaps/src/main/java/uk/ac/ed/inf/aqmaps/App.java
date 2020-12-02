@@ -96,7 +96,7 @@ public final class App {
         // create the flight path file
         IO.writeFlightPath(drone.getFlightPath(), day, month, year);
         
-		System.out.println("The drone took " + (150 - drone.getMovesLeft()) + "moves to complete the route.");
+		System.out.println("The drone took " + (150 - drone.getMovesLeft()) + " moves to complete the route.");
         System.out.println("Done!");
     }
     
