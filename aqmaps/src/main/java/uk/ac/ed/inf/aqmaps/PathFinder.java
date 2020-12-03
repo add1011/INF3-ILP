@@ -45,22 +45,17 @@ public final class PathFinder {
 			
 			for(var i = 1; i < iLimit; i++) {
 				for (var k = i+1; k < kLimit; k++) {
-					if ((s.get(i).getCoordinates().distance(s.get(k+1).getCoordinates()) + s.get(i-1).getCoordinates().distance(s.get(k).getCoordinates())) <= 
-						(s.get(i).getCoordinates().distance(s.get(i-1).getCoordinates()) + s.get(k+1).getCoordinates().distance(s.get(k).getCoordinates()))) {
-						newRoute = twoOptSwap(s, i, k);
-						newRouteLength = calcRouteLength(startCoordinates, newRoute);
+					newRoute = twoOptSwap(s, i, k);
+					newRouteLength = calcRouteLength(startCoordinates, newRoute);
 						
-						// if swapping the nodes improved the route length then set this new found route as the best route so far
-						if (newRouteLength < bestRouteLength) {
-							s = newRoute;
-							bestRouteLength = newRouteLength;
-							improvementMade = true;
-						}
+					// if swapping the nodes improved the route length then set this new found route as the best route so far
+					if (newRouteLength < bestRouteLength) {
+						s = newRoute;
+						bestRouteLength = newRouteLength;
+						improvementMade = true;
 					}
-					
 				}
 			}
-			
 			if (improvementMade == false) {
 				return s;
 			}
@@ -269,7 +264,7 @@ public final class PathFinder {
 		// for every consecutive sensor, add the distance between them
 		for (int i = 0; i < sensors.size()-1; i++) {
 			int j = i + 1;
-			routeLength += sensors.get(i).getCoordinates().distance(sensors.get(j).getCoordinates());
+			routeLength += sensors.get(i).getCoordinates().distance(sensors.get(j).getCoordinates());;
 		}
 		
 		// finally add the distance from the last visited sensor to the start point
